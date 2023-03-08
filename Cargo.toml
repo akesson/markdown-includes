@@ -1,0 +1,18 @@
+[package]
+name = "markdown-includes"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0"
+percent-encoding = "2.2"
+camino = "1.1"
+line-span = "0.1"
+toml = "0.7"
+serde = { version = "1.0", features = ["derive"] }
+serde-inline-default = "0.1"
+
+[dev-dependencies]
+insta = { version = "1.23", features = ["yaml"] }
