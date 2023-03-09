@@ -1,5 +1,10 @@
 [package]
 name = "markdown-includes"
+license = "MIT"
+repository = "https://github.com/akesson/markdown-includes"
+description = "Include other documents, table of content, or rust-doc in Markdown using a simple template system"
+categories = ["text-processing"]
+keywords = ["markdown", "readme", "include"]
 version = "0.1.0"
 edition = "2021"
 
@@ -14,8 +19,8 @@ cargo_metadata = "0.15"
 syn = { version = "1.0", features = ["full", "extra-traits"] }
 itertools = "0.10"
 pulldown-cmark = "0.9"
-unicase = "2.6.0"
-string-sections = { git = "https://github.com/akesson/string-sections", rev = "f96c64304ed7a8b4aa6d291c98c610ce1712970d" }
+unicase = "2.6"
+string-sections = "0.1"
 
 [dev-dependencies]
 insta = { version = "1.23", features = ["yaml"] }
