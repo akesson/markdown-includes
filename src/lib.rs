@@ -4,7 +4,9 @@
 //! markdown file, but with the added support for fenced includes which are TOML fences with
 //! an extra name containing the configuration of the include.
 //!
-//! Example _README.tpl.md_:
+//! ## Example
+//!
+//! _src/README.tpl.md_:
 //! > My title<br>
 //! > <br>
 //! > Include a table of content:<br>
@@ -15,19 +17,19 @@
 //! > Extracted from lib.rs' rust doc:<br>
 //! > <br>
 //! > &#96;&#96;&#96;toml rustdoc<br>
-//! > source = "src/lib.rs"<br>
+//! > source = "lib.rs"<br>
 //! > &#96;&#96;&#96;<br>
 //!
 //!
+//! To generate a _README.md_ file you add a test:
 //!
-//! To generate the _README.md_ file (which will end up next to the .tpl.md file),
-//! you add a test:
 //! ```rust
 //! #[test]
 //! fn update_readme() {
-//!     markdown_includes::update("README.tpl.md").unwrap();
+//!     markdown_includes::update("src/README.tpl.md", "README.md").unwrap();
 //! }
 //! ```
+//!
 //! This test will update the README file if necessary, but if running
 //! in a CI pipeline (the CI environment variable is set),
 //! it will fail if the _README.md_ needs updating.
@@ -43,6 +45,7 @@ use std::{env, fs};
 use anyhow::{bail, Result};
 use camino::Utf8PathBuf;
 use fence::find_fences;
+use prettydiff::diff_lines;
 
 pub fn process_includes_document(document: &mut String) -> Result<()> {
     let mut fences = find_fences(&document)?;
@@ -80,7 +83,9 @@ Please don't edit. This document has been generated from {template_file}
             bail!(
                 "The markdown document {dest_path} is out of sync with {template_path}. 
             Please re-run the tests and commit the updated file. 
-            This message is generated because the test is run on CI (the CI environment variable is set)."
+            This message is generated because the test is run on CI (the CI environment variable is set).\n
+            --- diff:\n
+            {}", diff_lines(&current_doc, &generated_doc)
             );
         } else {
             fs::write(&dest_path, generated_doc.as_bytes())?;
