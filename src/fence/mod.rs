@@ -6,7 +6,7 @@ use std::ops::Range;
 use anyhow::Result;
 use line_span::LineSpans;
 
-use self::toc::TocFence;
+use self::{rustdoc::RustDocFence, toc::TocFence};
 
 pub trait Fence {
     /// The fence name is the part after "toml"
@@ -46,6 +46,8 @@ fn create_fence(
 ) -> Result<Option<Box<dyn Fence>>> {
     if TocFence::is_match(name) {
         Ok(Some(TocFence::create(outer, inner, document)?))
+    } else if RustDocFence::is_match(name) {
+        Ok(Some(RustDocFence::create(outer, inner, document)?))
     } else {
         Ok(None)
     }
@@ -54,6 +56,7 @@ fn create_fence(
 pub fn find_fences(document: &str) -> Result<Vec<Box<dyn Fence>>> {
     let mut header: Option<Range<usize>> = None;
     let mut fences = Vec::new();
+
     for line in document.line_spans() {
         if line.starts_with("```toml ") && line.len() >= 10 && header.is_none() {
             header = Some(line.range());

@@ -17,7 +17,7 @@ impl Fence for TocFence {
         Self: Sized,
     {
         let name = name.to_lowercase();
-        name.ends_with("toc") || name.ends_with("toc")
+        name.ends_with("toc") || name.ends_with("table-of-contents")
     }
 
     fn priority(self: &Self) -> u8 {
