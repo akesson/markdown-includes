@@ -7,5 +7,5 @@ header = "Table of contents"
 ---
 
 ```toml rustdoc
-source = "src/lib.rs"
+source = "lib.rs"
 ```

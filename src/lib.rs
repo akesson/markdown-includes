@@ -40,13 +40,17 @@ mod tests;
 mod fence;
 mod rustdoc_parse;
 
-use std::{env, fs, iter::zip, path::PathBuf};
+use std::{
+    env, fs,
+    iter::zip,
+    path::{Path, PathBuf},
+};
 
 use anyhow::{bail, Result};
 use fence::find_fences;
 
-pub fn process_includes_document(document: &mut String) -> Result<()> {
-    let mut fences = find_fences(&document)?;
+pub fn process_includes_document(document: &mut String, template_dir: &Path) -> Result<()> {
+    let mut fences = find_fences(&document, template_dir)?;
     fences.sort_by_key(|f| f.priority());
 
     for fence in fences {
@@ -59,8 +63,12 @@ pub fn update(template_file: &str, destination_file: &str) -> Result<()> {
     let is_ci = env::var("CI").map(|_| true).unwrap_or(false);
 
     let template_path = PathBuf::from(template_file);
+    let template_dir = template_path
+        .parent()
+        .map(|p| p.to_path_buf())
+        .unwrap_or_else(|| PathBuf::from(""));
     let mut generated_doc = fs::read_to_string(&template_path)?;
-    process_includes_document(&mut generated_doc)?;
+    process_includes_document(&mut generated_doc, &template_dir)?;
     let generated_doc = format!(
         r#"<!-- 
 Please don't edit. This document has been generated from {template_file}

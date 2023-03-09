@@ -1,7 +1,7 @@
 use anyhow::Result;
 use percent_encoding::{percent_encode, CONTROLS};
 use serde::Deserialize;
-use std::{ops::Range, str::FromStr};
+use std::{ops::Range, path::Path, str::FromStr};
 use string_sections::SectionSpan;
 
 use super::Fence;
@@ -24,7 +24,7 @@ impl Fence for TocFence {
         10
     }
 
-    fn create(document: &str, section: SectionSpan) -> Result<Box<Self>>
+    fn create(document: &str, section: SectionSpan, _template_dir: &Path) -> Result<Box<Self>>
     where
         Self: Sized,
     {

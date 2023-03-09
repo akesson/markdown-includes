@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use insta::assert_snapshot;
 
 use crate::process_includes_document;
@@ -21,7 +23,7 @@ text
 "##;
 
     let mut document = doc.trim().to_string();
-    process_includes_document(&mut document).unwrap();
+    process_includes_document(&mut document, Path::new("")).unwrap();
 
     assert_snapshot!(document, @r###"
     Some markdown

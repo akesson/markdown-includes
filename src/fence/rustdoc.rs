@@ -1,4 +1,4 @@
-use std::ops::Range;
+use std::{ops::Range, path::Path};
 
 use crate::rustdoc_parse::{parse, RustDocOptions};
 
@@ -12,13 +12,12 @@ pub struct RustDocFence {
 }
 
 impl Fence for RustDocFence {
-    fn create(document: &str, section: SectionSpan) -> Result<Box<Self>>
+    fn create(document: &str, section: SectionSpan, template_dir: &Path) -> Result<Box<Self>>
     where
         Self: Sized,
     {
-        let conf = toml::de::from_str(&document[section.inner_range()])?;
-        println!("opts: {:?}", conf);
-        println!("{:?}", std::env::current_dir());
+        let mut conf: RustDocOptions = toml::de::from_str(&document[section.inner_range()])?;
+        conf.source = template_dir.join(&conf.source);
         let outer = section.outer_range();
         Ok(Box::new(Self { conf, outer }))
     }
