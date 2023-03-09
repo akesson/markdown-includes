@@ -40,12 +40,11 @@ mod tests;
 mod fence;
 mod rustdoc_parse;
 
-use std::{env, fs};
+use std::{env, fs, iter::zip};
 
 use anyhow::{bail, Result};
 use camino::Utf8PathBuf;
 use fence::find_fences;
-use prettydiff::diff_lines;
 
 pub fn process_includes_document(document: &mut String) -> Result<()> {
     let mut fences = find_fences(&document)?;
@@ -78,14 +77,12 @@ Please don't edit. This document has been generated from {template_file}
         "".to_string()
     };
 
-    if generated_doc != current_doc {
+    if let Some(diff_str) = diff(&generated_doc, &current_doc) {
         if is_ci {
             bail!(
                 "The markdown document {dest_path} is out of sync with {template_path}. 
             Please re-run the tests and commit the updated file. 
-            This message is generated because the test is run on CI (the CI environment variable is set).\n
-            --- diff:\n
-            {}", diff_lines(&current_doc, &generated_doc)
+            This message is generated because the test is run on CI (the CI environment variable is set).\n{diff_str}"
             );
         } else {
             fs::write(&dest_path, generated_doc.as_bytes())?;
@@ -93,6 +90,24 @@ Please don't edit. This document has been generated from {template_file}
     }
 
     Ok(())
+}
+
+fn diff(doc1: &str, doc2: &str) -> Option<String> {
+    if zip(doc1.lines(), doc2.lines()).any(|(l1, l2)| l1.trim() != l2.trim()) {
+        Some(
+            diff::lines(&doc1, &doc2)
+                .iter()
+                .map(|diff| match diff {
+                    diff::Result::Left(l) => format!("- {}", l),
+                    diff::Result::Both(l, _) => format!("= {}", l),
+                    diff::Result::Right(r) => format!("+ {}", r),
+                })
+                .collect::<Vec<_>>()
+                .join("\n"),
+        )
+    } else {
+        None
+    }
 }
 
 #[test]
