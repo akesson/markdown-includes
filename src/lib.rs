@@ -45,7 +45,6 @@ use std::{env, fs};
 use anyhow::{bail, Result};
 use camino::Utf8PathBuf;
 use fence::find_fences;
-use prettydiff::diff_lines;
 
 pub fn process_includes_document(document: &mut String) -> Result<()> {
     let mut fences = find_fences(&document)?;
@@ -80,12 +79,20 @@ Please don't edit. This document has been generated from {template_file}
 
     if generated_doc != current_doc {
         if is_ci {
+            let diff = diff::lines(&current_doc, &generated_doc)
+                .iter()
+                .map(|diff| match diff {
+                    diff::Result::Left(l) => format!("-{}", l),
+                    diff::Result::Both(l, _) => format!(" {}", l),
+                    diff::Result::Right(r) => format!("+{}", r),
+                })
+                .collect::<Vec<_>>()
+                .join("\n");
+
             bail!(
                 "The markdown document {dest_path} is out of sync with {template_path}. 
             Please re-run the tests and commit the updated file. 
-            This message is generated because the test is run on CI (the CI environment variable is set).\n
-            --- diff:\n
-            {}", diff_lines(&current_doc, &generated_doc)
+            This message is generated because the test is run on CI (the CI environment variable is set).\n{diff}"
             );
         } else {
             fs::write(&dest_path, generated_doc.as_bytes())?;
