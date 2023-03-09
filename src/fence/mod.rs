@@ -1,10 +1,8 @@
 mod rustdoc;
 mod toc;
 
-use std::ops::Range;
-
 use anyhow::Result;
-use line_span::LineSpans;
+use string_sections::{prelude::Sections, SectionSpan};
 
 use self::{rustdoc::RustDocFence, toc::TocFence};
 
@@ -28,47 +26,36 @@ pub trait Fence {
 
     /// create a fence
     ///
-    /// - outer: the range of the fence declaration (including the fence ticks)
-    /// - inner: the range of the fence configuration (the inside part)
     /// - document: the entire document
-    fn create(outer: Range<usize>, inner: Range<usize>, document: &str) -> Result<Box<Self>>
+    /// - section: a fenced section
+    fn create(document: &str, section: SectionSpan) -> Result<Box<Self>>
     where
         Self: Sized;
 
     fn run(self: &Self, document: &mut String) -> Result<()>;
 }
 
-fn create_fence(
-    outer: Range<usize>,
-    inner: Range<usize>,
-    document: &str,
-    name: &str,
-) -> Result<Option<Box<dyn Fence>>> {
-    if TocFence::is_match(name) {
-        Ok(Some(TocFence::create(outer, inner, document)?))
-    } else if RustDocFence::is_match(name) {
-        Ok(Some(RustDocFence::create(outer, inner, document)?))
+fn create_fence(document: &str, section: SectionSpan) -> Result<Option<Box<dyn Fence>>> {
+    if TocFence::is_match(&section.start_line) {
+        Ok(Some(TocFence::create(document, section)?))
+    } else if RustDocFence::is_match(&section.start_line) {
+        Ok(Some(RustDocFence::create(document, section)?))
     } else {
         Ok(None)
     }
 }
 
 pub fn find_fences(document: &str) -> Result<Vec<Box<dyn Fence>>> {
-    let mut header: Option<Range<usize>> = None;
     let mut fences = Vec::new();
 
-    for line in document.line_spans() {
-        if line.starts_with("```toml ") && line.len() >= 10 && header.is_none() {
-            header = Some(line.range());
-        } else if line.starts_with("```") {
-            if let Some(header) = &header {
-                let name = &document[header.start + 8..header.end];
-                let outer = header.start..line.end();
-                let inner = header.end..line.start();
-                if let Some(fence) = create_fence(outer, inner, document, name)? {
-                    fences.push(fence);
-                }
-            }
+    let section_iter = document.sections(
+        |line| line.starts_with("```"),
+        |sect| sect.end_line.starts_with("```"),
+    );
+
+    for section in section_iter {
+        if let Some(fence) = create_fence(document, section)? {
+            fences.push(fence)
         }
     }
     Ok(fences)

@@ -3,6 +3,7 @@ use percent_encoding::{percent_encode, CONTROLS};
 use serde::Deserialize;
 use serde_inline_default::serde_inline_default;
 use std::{ops::Range, str::FromStr};
+use string_sections::SectionSpan;
 
 use super::Fence;
 
@@ -24,11 +25,12 @@ impl Fence for TocFence {
         10
     }
 
-    fn create(outer: Range<usize>, inner: Range<usize>, document: &str) -> Result<Box<Self>>
+    fn create(document: &str, section: SectionSpan) -> Result<Box<Self>>
     where
         Self: Sized,
     {
-        let conf = toml::de::from_str(&document[inner])?;
+        let conf = toml::de::from_str(&document[section.inner_range()])?;
+        let outer = section.outer_range();
         Ok(Box::new(Self { conf, outer }))
     }
 

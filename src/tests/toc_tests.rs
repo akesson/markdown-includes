@@ -1,6 +1,6 @@
 use insta::assert_snapshot;
 
-use crate::process_includes;
+use crate::process_includes_document;
 
 #[test]
 fn test_toc() {
@@ -21,7 +21,7 @@ text
 "##;
 
     let mut document = doc.trim().to_string();
-    process_includes(&mut document).unwrap();
+    process_includes_document(&mut document).unwrap();
 
     assert_snapshot!(document, @r###"
     Some markdown

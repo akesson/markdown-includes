@@ -19,6 +19,7 @@ syn = { version = "1.0.101", features = ["full", "extra-traits"] }
 itertools = "0.10.5"
 pulldown-cmark = "0.9.2"
 unicase = "2.6.0"
+string-sections = { git = "https://github.com/akesson/string-sections", rev = "f96c64304ed7a8b4aa6d291c98c610ce1712970d" }
 
 [dev-dependencies]
 insta = { version = "1.23", features = ["yaml"] }

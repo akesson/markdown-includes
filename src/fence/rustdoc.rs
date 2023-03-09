@@ -4,6 +4,7 @@ use crate::rustdoc_parse::{parse, RustDocOptions};
 
 use super::Fence;
 use anyhow::Result;
+use string_sections::SectionSpan;
 
 pub struct RustDocFence {
     conf: RustDocOptions,
@@ -11,13 +12,14 @@ pub struct RustDocFence {
 }
 
 impl Fence for RustDocFence {
-    fn create(outer: Range<usize>, inner: Range<usize>, document: &str) -> Result<Box<Self>>
+    fn create(document: &str, section: SectionSpan) -> Result<Box<Self>>
     where
         Self: Sized,
     {
-        let conf = toml::de::from_str(&document[inner])?;
+        let conf = toml::de::from_str(&document[section.inner_range()])?;
         println!("opts: {:?}", conf);
         println!("{:?}", std::env::current_dir());
+        let outer = section.outer_range();
         Ok(Box::new(Self { conf, outer }))
     }
 
