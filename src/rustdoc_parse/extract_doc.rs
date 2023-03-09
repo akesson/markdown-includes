@@ -4,30 +4,20 @@
  */
 
 use super::Doc;
-use std::path::{Path, PathBuf};
-use thiserror::Error;
+use anyhow::Context;
+use std::path::Path;
 
-#[derive(Error, Debug)]
-pub enum ExtractDocError {
-    #[error("cannot open source file \"{0}\"")]
-    ErrorReadingSourceFile(PathBuf),
-    #[error("cannot parse source file: {0}")]
-    ErrorParsingSourceFile(syn::Error),
-}
-
-pub fn extract_doc_from_source_file(
-    file_path: impl AsRef<Path>,
-) -> Result<Option<Doc>, ExtractDocError> {
+pub fn extract_doc_from_source_file(file_path: impl AsRef<Path>) -> anyhow::Result<Option<Doc>> {
     let source: String = std::fs::read_to_string(file_path.as_ref())
-        .map_err(|_| ExtractDocError::ErrorReadingSourceFile(file_path.as_ref().to_path_buf()))?;
+        .context(format!("cannot open source file {:?}", file_path.as_ref()))?;
 
     extract_doc_from_source_str(&source)
 }
 
-pub fn extract_doc_from_source_str(source: &str) -> Result<Option<Doc>, ExtractDocError> {
+pub fn extract_doc_from_source_str(source: &str) -> anyhow::Result<Option<Doc>> {
     use syn::{parse_str, Lit, Meta, MetaNameValue};
 
-    let ast: syn::File = parse_str(source).map_err(ExtractDocError::ErrorParsingSourceFile)?;
+    let ast: syn::File = parse_str(source).context("cannot parse source file")?;
     let mut lines: Vec<String> = Vec::with_capacity(1024);
 
     for attr in &ast.attrs {

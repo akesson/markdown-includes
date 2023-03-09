@@ -10,7 +10,7 @@ mod rust_markdown_tag;
 mod rust_remove_comments;
 mod utils;
 
-pub use intralinks::{DocTransformIntralinks, IntralinkError, IntralinksConfig};
+pub use intralinks::{DocTransformIntralinks, IntralinksConfig};
 pub use rust_markdown_tag::DocTransformRustMarkdownTag;
 pub use rust_remove_comments::DocTransformRustRemoveComments;
 

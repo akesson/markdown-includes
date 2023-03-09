@@ -1,7 +1,6 @@
 use anyhow::Result;
 use percent_encoding::{percent_encode, CONTROLS};
 use serde::Deserialize;
-use serde_inline_default::serde_inline_default;
 use std::{ops::Range, str::FromStr};
 use string_sections::SectionSpan;
 
@@ -55,21 +54,29 @@ impl Fence for TocFence {
     }
 }
 
-#[serde_inline_default]
 #[derive(Deserialize)]
 pub struct TocConfig {
-    #[serde_inline_default(String::from("-"))]
+    #[serde(default = "default_bullet")]
     pub bullet: String,
-    #[serde_inline_default(4)]
+    #[serde(default = "default_inline")]
     pub indent: usize,
     pub max_depth: Option<usize>,
     #[serde(default)]
     pub min_depth: usize,
     pub header: Option<String>,
-    #[serde_inline_default(true)]
+    #[serde(default = "default_link")]
     pub link: bool,
 }
 
+fn default_link() -> bool {
+    true
+}
+fn default_inline() -> usize {
+    4
+}
+fn default_bullet() -> String {
+    "-".to_string()
+}
 fn slugify(text: &str) -> String {
     percent_encode(text.replace(" ", "-").to_lowercase().as_bytes(), CONTROLS).to_string()
 }

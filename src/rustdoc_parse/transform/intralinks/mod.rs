@@ -8,6 +8,7 @@ use crate::rustdoc_parse::transform::intralinks::links::{
 };
 use crate::rustdoc_parse::transform::DocTransform;
 use crate::rustdoc_parse::Doc;
+use anyhow::{anyhow, bail, Context};
 use module_walker::walk_module_file;
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
@@ -16,33 +17,32 @@ use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use syn::{Item, ItemMod};
-use thiserror::Error;
 use unicase::UniCase;
 
 mod links;
 mod module_walker;
 
-#[derive(Error, Debug)]
-pub enum IntralinkError {
-    #[error("IO error: {0}")]
-    IOError(std::io::Error),
-    #[error("failed to analyzing code: {0}")]
-    AstWalkError(module_walker::ModuleWalkError),
-    #[error("failed to load standard library: {0}")]
-    LoadStdLibError(String),
-}
+// #[derive(Error, Debug)]
+// pub enum IntralinkError {
+//     #[error("IO error: {0}")]
+//     IOError(std::io::Error),
+//     #[error("failed to analyzing code: {0}")]
+//     AstWalkError(module_walker::ModuleWalkError),
+//     #[error("failed to load standard library: {0}")]
+//     LoadStdLibError(String),
+// }
 
-impl From<std::io::Error> for IntralinkError {
-    fn from(err: std::io::Error) -> Self {
-        IntralinkError::IOError(err)
-    }
-}
+// impl From<std::io::Error> for IntralinkError {
+//     fn from(err: std::io::Error) -> Self {
+//         IntralinkError::IOError(err)
+//     }
+// }
 
-impl From<module_walker::ModuleWalkError> for IntralinkError {
-    fn from(err: module_walker::ModuleWalkError) -> Self {
-        IntralinkError::AstWalkError(err)
-    }
-}
+// impl From<module_walker::ModuleWalkError> for IntralinkError {
+//     fn from(err: module_walker::ModuleWalkError) -> Self {
+//         IntralinkError::AstWalkError(err)
+//     }
+// }
 
 #[derive(Default, Debug, PartialEq, Eq, Clone, Deserialize)]
 pub struct IntralinksConfig {
@@ -81,9 +81,9 @@ impl<F> DocTransform for DocTransformIntralinks<F>
 where
     F: Fn(&str),
 {
-    type E = IntralinkError;
+    type E = anyhow::Error;
 
-    fn transform(&self, doc: &Doc) -> Result<Doc, IntralinkError> {
+    fn transform(&self, doc: &Doc) -> anyhow::Result<Doc> {
         let symbols: HashSet<ItemPath> = extract_markdown_intralink_symbols(doc);
 
         // If there are no intralinks in the doc don't even bother doing anything else.
@@ -482,7 +482,7 @@ fn explore_crate<P: AsRef<Path>>(
     paths_to_explore: &HashSet<ItemPath>,
     symbols_type: &mut HashMap<ItemPath, SymbolType>,
     emit_warning: &impl Fn(&str),
-) -> Result<(), module_walker::ModuleWalkError> {
+) -> anyhow::Result<()> {
     let mut modules_visited: HashSet<ItemPath> = HashSet::new();
 
     // Walking the module only visits items, which means we need to add the root `crate` explicitly.
@@ -521,7 +521,7 @@ fn load_symbols_type<P: AsRef<Path>>(
     entry_point: P,
     symbols: &HashSet<ItemPath>,
     emit_warning: &impl Fn(&str),
-) -> Result<HashMap<ItemPath, SymbolType>, IntralinkError> {
+) -> anyhow::Result<HashMap<ItemPath, SymbolType>> {
     let paths_to_explore: HashSet<ItemPath> = all_ancestor_paths(symbols.iter());
     let mut symbols_type: HashMap<ItemPath, SymbolType> = HashMap::new();
 
@@ -850,13 +850,13 @@ fn rewrite_reference_links_definitions(
     }
 }
 
-fn get_rustc_sysroot_libraries_dir() -> Result<PathBuf, IntralinkError> {
+fn get_rustc_sysroot_libraries_dir() -> anyhow::Result<PathBuf> {
     use std::process::Command;
 
     let output = Command::new("rustc")
         .args(["--print=sysroot"])
         .output()
-        .map_err(|e| IntralinkError::LoadStdLibError(format!("failed to run rustc: {}", e)))?;
+        .context("failed to run rustc")?;
 
     let s = String::from_utf8(output.stdout).expect("unexpected output from rustc");
     let sysroot = PathBuf::from(s.trim());
@@ -868,10 +868,7 @@ fn get_rustc_sysroot_libraries_dir() -> Result<PathBuf, IntralinkError> {
         .join("library");
 
     match src_path.is_dir() {
-        false => Err(IntralinkError::LoadStdLibError(format!(
-            "Cannot find rust standard library in \"{}\"",
-            src_path.display()
-        ))),
+        false => bail!("Cannot find rust standard library in {src_path:?}",),
         true => Ok(src_path),
     }
 }
@@ -889,7 +886,7 @@ fn references_standard_library(symbols: &HashSet<ItemPath>) -> bool {
         .any(|symbol| symbol.anchor == ItemPathAnchor::Root)
 }
 
-fn get_standard_libraries() -> Result<Vec<Crate>, IntralinkError> {
+fn get_standard_libraries() -> anyhow::Result<Vec<Crate>> {
     let libraries_dir = get_rustc_sysroot_libraries_dir()?;
     let mut std_libs = Vec::with_capacity(64);
 
@@ -901,12 +898,7 @@ fn get_standard_libraries() -> Result<Vec<Crate>, IntralinkError> {
 
         if cargo_manifest_path.is_file() && lib_entrypoint.is_file() {
             let crate_name = crate::rustdoc_parse::project_package_name(&cargo_manifest_path)
-                .ok_or_else(|| {
-                    IntralinkError::LoadStdLibError(format!(
-                        "failed to load manifest in \"{}\"",
-                        cargo_manifest_path.display()
-                    ))
-                })?;
+                .ok_or_else(|| anyhow!("failed to load manifest in {cargo_manifest_path:?}",))?;
             let crate_info = Crate {
                 name: crate_name,
                 entrypoint: lib_entrypoint,

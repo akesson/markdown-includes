@@ -3,17 +3,16 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use std::cell::Cell;
 use std::path::Path;
-use thiserror::Error;
 
 mod extract_doc;
 mod options;
 pub mod transform;
 pub mod utils;
 
-pub use extract_doc::{extract_doc_from_source_file, ExtractDocError};
+pub use extract_doc::extract_doc_from_source_file;
 
 pub use self::options::RustDocOptions;
 
@@ -64,22 +63,6 @@ fn transform_doc(
     Ok(transform.transform(&doc)?)
 }
 
-#[derive(Error, Debug)]
-pub enum ProjectError {
-    #[error("failed to get cargo metadata: {0}")]
-    CargoMetadataError(cargo_metadata::Error),
-    #[error("project has no root package")]
-    ProjectHasNoRootPackage,
-    #[error("project has no package \"{0}\"")]
-    ProjectHasNoPackage(String),
-}
-
-impl From<cargo_metadata::Error> for ProjectError {
-    fn from(e: cargo_metadata::Error) -> ProjectError {
-        ProjectError::CargoMetadataError(e)
-    }
-}
-
 #[derive(PartialEq, Eq, Debug)]
 struct Project {
     package_name: String,
@@ -88,12 +71,12 @@ struct Project {
 impl Project {
     /// Creates a [`Project`] the current directory.  It will search ancestor paths until it finds
     /// the root of the project.
-    pub fn from_current_dir() -> Result<Project, ProjectError> {
+    pub fn from_current_dir() -> anyhow::Result<Project> {
         let cmd = cargo_metadata::MetadataCommand::new();
         let metadata = cmd.exec()?;
         let package = metadata
             .root_package()
-            .ok_or(ProjectError::ProjectHasNoRootPackage)?;
+            .context("project has no root package")?;
 
         Ok(Project::from_package(package))
     }
@@ -114,12 +97,12 @@ impl Project {
         }
     }
 
-    pub fn from_current_dir_workspace_project(project_name: &str) -> Result<Project, ProjectError> {
+    pub fn from_current_dir_workspace_project(project_name: &str) -> anyhow::Result<Project> {
         let cmd = cargo_metadata::MetadataCommand::new();
         let metadata = cmd.exec()?;
 
-        let package = Project::select_package(&metadata, project_name)
-            .ok_or_else(|| ProjectError::ProjectHasNoPackage(project_name.to_owned()))?;
+        let package =
+            Project::select_package(&metadata, project_name).context("project has no package")?;
 
         Ok(Project::from_package(package))
     }

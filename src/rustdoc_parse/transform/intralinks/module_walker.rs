@@ -6,31 +6,10 @@
 use std::path::{Path, PathBuf};
 use syn::Ident;
 use syn::Item;
-use thiserror::Error;
 
 use super::ItemPath;
 
-#[derive(Error, Debug)]
-pub enum ModuleWalkError {
-    #[error("IO error: {0}")]
-    IOError(std::io::Error),
-    #[error("failed to parse rust file: {0}")]
-    ParseError(syn::Error),
-}
-
-impl From<std::io::Error> for ModuleWalkError {
-    fn from(err: std::io::Error) -> Self {
-        ModuleWalkError::IOError(err)
-    }
-}
-
-impl From<syn::Error> for ModuleWalkError {
-    fn from(err: syn::Error) -> Self {
-        ModuleWalkError::ParseError(err)
-    }
-}
-
-fn file_ast<P: AsRef<Path>>(filepath: P) -> Result<syn::File, ModuleWalkError> {
+fn file_ast<P: AsRef<Path>>(filepath: P) -> anyhow::Result<syn::File> {
     let src = std::fs::read_to_string(filepath)?;
 
     Ok(syn::parse_file(&src)?)
@@ -60,7 +39,7 @@ pub(super) fn walk_module_items(
     visit: &mut impl FnMut(&ItemPath, &Item),
     explore_module: &mut impl FnMut(&ItemPath, &syn::ItemMod) -> bool,
     emit_warning: &impl Fn(&str),
-) -> Result<(), ModuleWalkError> {
+) -> anyhow::Result<()> {
     for item in ast.iter() {
         visit(mod_symbol, item);
 
@@ -107,12 +86,19 @@ pub(super) fn walk_module_file<P: AsRef<Path>>(
     visit: &mut impl FnMut(&ItemPath, &Item),
     explore_module: &mut impl FnMut(&ItemPath, &syn::ItemMod) -> bool,
     emit_warning: &impl Fn(&str),
-) -> Result<(), ModuleWalkError> {
+) -> anyhow::Result<()> {
     let dir: &Path = file
         .as_ref()
         .parent()
         .unwrap_or_else(|| panic!("failed to get directory of \"{}\"", file.as_ref().display()));
     let ast: syn::File = file_ast(&file)?;
 
-    walk_module_items(&ast.items, dir, mod_symbol, visit, explore_module, emit_warning)
+    walk_module_items(
+        &ast.items,
+        dir,
+        mod_symbol,
+        visit,
+        explore_module,
+        emit_warning,
+    )
 }

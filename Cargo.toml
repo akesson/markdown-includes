@@ -8,19 +8,14 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0"
 percent-encoding = "2.2"
-camino = "1.1"
-line-span = "0.1"
 toml = "0.7"
 serde = { version = "1.0", features = ["derive"] }
-serde-inline-default = "0.1"
-thiserror = "1.0"
 cargo_metadata = "0.15"
 syn = { version = "1.0.101", features = ["full", "extra-traits"] }
 itertools = "0.10.5"
 pulldown-cmark = "0.9.2"
 unicase = "2.6.0"
 string-sections = { git = "https://github.com/akesson/string-sections", rev = "f96c64304ed7a8b4aa6d291c98c610ce1712970d" }
-diff = "0.1"
 
 [dev-dependencies]
 insta = { version = "1.23", features = ["yaml"] }
