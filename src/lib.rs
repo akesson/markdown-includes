@@ -79,15 +79,17 @@ Please don't edit. This document has been generated from {template_file}
 
     if generated_doc != current_doc {
         if is_ci {
-            let diff = diff::lines(&current_doc, &generated_doc)
-                .iter()
-                .map(|diff| match diff {
-                    diff::Result::Left(l) => format!("-{}", l),
-                    diff::Result::Both(l, _) => format!(" {}", l),
-                    diff::Result::Right(r) => format!("+{}", r),
-                })
-                .collect::<Vec<_>>()
-                .join("\n");
+            // let diff = diff::lines(&current_doc, &generated_doc)
+            //     .iter()
+            //     .map(|diff| match diff {
+            //         diff::Result::Left(l) => format!("-{}", l),
+            //         diff::Result::Both(l, _) => format!(" {}", l),
+            //         diff::Result::Right(r) => format!("+{}", r),
+            //     })
+            //     .collect::<Vec<_>>()
+            //     .join("\n");
+
+            let diff = format!("\n=========== ORIG ===========\n{current_doc}\n\n=========== NEW ===========\n{generated_doc}");
 
             bail!(
                 "The markdown document {dest_path} is out of sync with {template_path}. 
