@@ -40,8 +40,9 @@ mod tests;
 mod fence;
 mod rustdoc_parse;
 
+use fs_err as fs;
 use std::{
-    env, fs,
+    env,
     iter::zip,
     path::{Path, PathBuf},
 };

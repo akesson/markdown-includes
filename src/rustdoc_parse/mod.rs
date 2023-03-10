@@ -4,6 +4,7 @@
  */
 
 use anyhow::{anyhow, Context};
+use fs_err as fs;
 use std::cell::Cell;
 use std::path::Path;
 
@@ -135,7 +136,7 @@ impl Project {
 }
 
 fn project_package_name(manifest_path: impl AsRef<Path>) -> Option<String> {
-    let str: String = std::fs::read_to_string(&manifest_path).ok()?;
+    let str: String = fs::read_to_string(&manifest_path).ok()?;
     let toml: toml::Value = toml::from_str(&str).ok()?;
     let package_name = toml
         .get("package")
