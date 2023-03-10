@@ -71,9 +71,15 @@ pub fn update(template_file: &Path, destination_file: &Path) -> Result<()> {
     let mut generated_doc = fs::read_to_string(&template_path)
         .context(format!("failed to read template: {template_path:?}"))?;
     process_includes_document(&mut generated_doc, &template_dir)?;
+
+    let file = template_file
+        .components()
+        .map(|c| c.as_os_str().to_string_lossy())
+        .collect::<Vec<_>>()
+        .join("/");
     let generated_doc = format!(
         r#"<!-- 
-Please don't edit. This document has been generated from {template_file:?}
+Please don't edit. This document has been generated from {file:?}
 --> 
 {generated_doc}"#
     );
