@@ -69,7 +69,11 @@ pub fn update(template_file: &Path, destination_file: &Path) -> Result<()> {
         .map(|p| p.to_path_buf())
         .unwrap_or_else(|| PathBuf::from(""));
     let mut generated_doc = fs::read_to_string(&template_path)
-        .context(format!("failed to read template: {template_path:?}"))?;
+        .context(format!(
+            "current working directory: {:?}",
+            env::current_dir()
+        ))
+        .context(format!("failed to read template"))?;
     process_includes_document(&mut generated_doc, &template_dir)?;
 
     let file = template_file
