@@ -147,7 +147,6 @@ impl Heading {
                     format!("[{}](#{})", &self.title, slugify(&self.title))
                 }
             );
-            println!("t: {}", head);
             Some(head)
         } else {
             None

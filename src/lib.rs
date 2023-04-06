@@ -60,15 +60,19 @@ pub fn process_includes_document(document: &mut String, template_dir: &Path) -> 
     Ok(())
 }
 
-pub fn update(template_file: &Path, destination_file: &Path) -> Result<()> {
+pub fn update<P1: AsRef<Path>, P2: AsRef<Path>>(
+    template_file: P1,
+    destination_file: P2,
+) -> Result<()> {
     let is_ci = env::var("CI").map(|_| true).unwrap_or(false);
 
-    let template_path = PathBuf::from(template_file);
-    let template_dir = template_path
+    let template_file = template_file.as_ref();
+
+    let template_dir = template_file
         .parent()
         .map(|p| p.to_path_buf())
         .unwrap_or_else(|| PathBuf::from(""));
-    let mut generated_doc = fs::read_to_string(&template_path)
+    let mut generated_doc = fs::read_to_string(&template_file)
         .context(format!(
             "current working directory: {:?}",
             env::current_dir()
@@ -88,7 +92,7 @@ Please don't edit. This document has been generated from {file:?}
 {generated_doc}"#
     );
 
-    let dest_path = PathBuf::from(destination_file);
+    let dest_path = destination_file.as_ref();
 
     let current_doc = if dest_path.exists() {
         fs::read_to_string(&dest_path)?
@@ -99,7 +103,7 @@ Please don't edit. This document has been generated from {file:?}
     if let Some(diff_str) = diff(&generated_doc, &current_doc) {
         if is_ci {
             bail!(
-                "The markdown document {dest_path:?} is out of sync with {template_path:?}. 
+                "The markdown document {dest_path:?} is out of sync with {template_file:?}. 
             Please re-run the tests and commit the updated file. 
             This message is generated because the test is run on CI (the CI environment variable is set).\n{diff_str}"
             );
