@@ -9,6 +9,7 @@ use crate::rustdoc_parse::transform::intralinks::links::{
 use crate::rustdoc_parse::transform::DocTransform;
 use crate::rustdoc_parse::Doc;
 use anyhow::{anyhow, bail, Context};
+use fs_err as fs;
 use module_walker::walk_module_file;
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
@@ -890,7 +891,7 @@ fn get_standard_libraries() -> anyhow::Result<Vec<Crate>> {
     let libraries_dir = get_rustc_sysroot_libraries_dir()?;
     let mut std_libs = Vec::with_capacity(64);
 
-    for entry in std::fs::read_dir(libraries_dir)? {
+    for entry in fs::read_dir(libraries_dir)? {
         let entry = entry?;
         let project_dir_path = entry.path();
         let cargo_manifest_path = project_dir_path.join("Cargo.toml");

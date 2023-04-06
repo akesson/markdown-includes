@@ -4,6 +4,11 @@
 //! markdown file, but with the added support for fenced includes which are TOML fences with
 //! an extra name containing the configuration of the include.
 //!
+//! ## rustdoc
+//!
+//! The rustdoc part of this crate is based on modified code from [cargo-rdme](https://crates.io/crates/cargo-rdme).
+//! The same limitations apply, especially for the syntax of [intralinks](https://github.com/orium/cargo-rdme#intralinks)
+//!
 //! ## Example
 //!
 //! _src/README.tpl.md_:
@@ -40,13 +45,14 @@ mod tests;
 mod fence;
 mod rustdoc_parse;
 
+use fs_err as fs;
 use std::{
-    env, fs,
+    env,
     iter::zip,
     path::{Path, PathBuf},
 };
 
-use anyhow::{bail, Result};
+use anyhow::{bail, Context, Result};
 use fence::find_fences;
 
 pub fn process_includes_document(document: &mut String, template_dir: &Path) -> Result<()> {
@@ -59,24 +65,39 @@ pub fn process_includes_document(document: &mut String, template_dir: &Path) -> 
     Ok(())
 }
 
-pub fn update(template_file: &str, destination_file: &str) -> Result<()> {
+pub fn update<P1: AsRef<Path>, P2: AsRef<Path>>(
+    template_file: P1,
+    destination_file: P2,
+) -> Result<()> {
     let is_ci = env::var("CI").map(|_| true).unwrap_or(false);
 
-    let template_path = PathBuf::from(template_file);
-    let template_dir = template_path
+    let template_file = template_file.as_ref();
+
+    let template_dir = template_file
         .parent()
         .map(|p| p.to_path_buf())
         .unwrap_or_else(|| PathBuf::from(""));
-    let mut generated_doc = fs::read_to_string(&template_path)?;
+    let mut generated_doc = fs::read_to_string(&template_file)
+        .context(format!(
+            "current working directory: {:?}",
+            env::current_dir()
+        ))
+        .context(format!("failed to read template"))?;
     process_includes_document(&mut generated_doc, &template_dir)?;
+
+    let file = template_file
+        .components()
+        .map(|c| c.as_os_str().to_string_lossy())
+        .collect::<Vec<_>>()
+        .join("/");
     let generated_doc = format!(
         r#"<!-- 
-Please don't edit. This document has been generated from {template_file}
+Please don't edit. This document has been generated from {file:?}
 --> 
 {generated_doc}"#
     );
 
-    let dest_path = PathBuf::from(destination_file);
+    let dest_path = destination_file.as_ref();
 
     let current_doc = if dest_path.exists() {
         fs::read_to_string(&dest_path)?
@@ -87,7 +108,7 @@ Please don't edit. This document has been generated from {template_file}
     if let Some(diff_str) = diff(&generated_doc, &current_doc) {
         if is_ci {
             bail!(
-                "The markdown document {dest_path:?} is out of sync with {template_path:?}. 
+                "The markdown document {dest_path:?} is out of sync with {template_file:?}. 
             Please re-run the tests and commit the updated file. 
             This message is generated because the test is run on CI (the CI environment variable is set).\n{diff_str}"
             );
@@ -103,7 +124,9 @@ fn diff(doc1: &str, doc2: &str) -> Option<String> {
     if zip(doc1.lines(), doc2.lines()).any(|(l1, l2)| l1.trim() != l2.trim()) {
         Some(
             zip(doc1.lines(), doc2.lines())
+                .filter(|(l1, l2)| l1.trim() != l2.trim())
                 .map(|(l1, l2)| format!("> {}\n< {}\n", l1.trim(), l2.trim()))
+                .take(5)
                 .collect::<Vec<_>>()
                 .join(", "),
         )
@@ -114,5 +137,9 @@ fn diff(doc1: &str, doc2: &str) -> Option<String> {
 
 #[test]
 fn update_readme() {
-    update("src/README.tpl.md", "README.md").unwrap();
+    update(
+        &Path::new("src").join("README.tpl.md"),
+        Path::new("README.md"),
+    )
+    .unwrap();
 }

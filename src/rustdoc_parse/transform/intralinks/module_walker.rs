@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+use fs_err as fs;
 use std::path::{Path, PathBuf};
 use syn::Ident;
 use syn::Item;
@@ -10,7 +11,7 @@ use syn::Item;
 use super::ItemPath;
 
 fn file_ast<P: AsRef<Path>>(filepath: P) -> anyhow::Result<syn::File> {
-    let src = std::fs::read_to_string(filepath)?;
+    let src = fs::read_to_string(filepath)?;
 
     Ok(syn::parse_file(&src)?)
 }

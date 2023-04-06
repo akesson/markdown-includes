@@ -1,11 +1,12 @@
 <!-- 
-Please don't edit. This document has been generated from src/README.tpl.md
+Please don't edit. This document has been generated from "src/README.tpl.md"
 --> 
 # markdown-includes
 
 Table of contents
 
 - [markdown-includes](#markdown-includes)
+    - [rustdoc](#rustdoc)
     - [Example](#example)
 
 ---
@@ -15,6 +16,11 @@ A simple way of including other files, rust doc and table of content in a markdo
 For a repo's README file, you'll create a _README.tpl.md_ which you can edit like a normal
 markdown file, but with the added support for fenced includes which are TOML fences with
 an extra name containing the configuration of the include.
+
+## rustdoc
+
+The rustdoc part of this crate is based on modified code from [cargo-rdme](https://crates.io/crates/cargo-rdme).
+The same limitations apply, especially for the syntax of [intralinks](https://github.com/orium/cargo-rdme#intralinks)
 
 ## Example
 

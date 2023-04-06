@@ -5,10 +5,11 @@
 
 use super::Doc;
 use anyhow::Context;
+use fs_err as fs;
 use std::path::Path;
 
 pub fn extract_doc_from_source_file(file_path: impl AsRef<Path>) -> anyhow::Result<Option<Doc>> {
-    let source: String = std::fs::read_to_string(file_path.as_ref())
+    let source: String = fs::read_to_string(file_path.as_ref())
         .context(format!("cannot open source file {:?}", file_path.as_ref()))?;
 
     extract_doc_from_source_str(&source)
