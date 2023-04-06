@@ -4,6 +4,11 @@
 //! markdown file, but with the added support for fenced includes which are TOML fences with
 //! an extra name containing the configuration of the include.
 //!
+//! ## rustdoc
+//!
+//! The rustdoc part of this crate is based on modified code from [cargo-rdme](https://crates.io/crates/cargo-rdme).
+//! The same limitations apply, especially for the syntax of [intralinks](https://github.com/orium/cargo-rdme#intralinks)
+//!
 //! ## Example
 //!
 //! _src/README.tpl.md_:
