@@ -5,7 +5,7 @@ repository = "https://github.com/akesson/markdown-includes"
 description = "Include other documents, table of content, or rust-doc in Markdown using a simple template system"
 categories = ["text-processing"]
 keywords = ["markdown", "readme", "include"]
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
